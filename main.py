@@ -90,17 +90,18 @@ async def update_maquina(maquina_id: int, maquina: MaquinaBase, db: db_dependenc
 
 @app.delete("/maquina/{maquina_id}", summary="Deleta uma máquina a partir do seu ID")
 async def delete_maquina(maquina_id: int, db: db_dependency):
-        try:
-            db.begin()
-            db.commit()
-            db_maquina = db.query(models.Maquina).filter(models.Maquina.codigo == maquina_id).first()
-            if db_maquina is None:
-                raise HTTPException(status_code=404, detail="Maquina not found")
-            db.delete(db_maquina)
-            return db_maquina
-        except SQLAlchemyError as e:
-            db.rollback()
-            raise HTTPException(status_code=500, detail="Database error: " + str(e))
+    try:
+        db.begin()
+        db_maquina = db.query(models.Maquina).filter(models.Maquina.codigo == maquina_id).first()
+        if db_maquina is None:
+            raise HTTPException(status_code=404, detail="Maquina not found")
+        db.query(models.Manutencao_maquina).filter(models.Manutencao_maquina.maquina_codigo == maquina_id).delete()
+        db.delete(db_maquina)
+        db.commit()
+        return db_maquina
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
 # CRUD manutenção
 @app.post("/manutencao/", summary="Cria uma nova manutenção", description="Cria uma nova manutenção na base de dados")
@@ -123,7 +124,7 @@ async def read_manutencao(manutencao_id: int, db: db_dependency):
         db.begin()
         db_manutencao = db.query(models.Manutencao).filter(models.Manutencao.codigo_manutencao == manutencao_id).first()
         if db_manutencao is None:
-            raise HTTPException(status_code=404, detail="Maquina not found")
+            raise HTTPException(status_code=404, detail="Manutencao not found")
         return db_manutencao
     except SQLAlchemyError as e:
         db.rollback()
@@ -136,7 +137,7 @@ async def update_manutencao(manutencao_id: int, manutencao: ManutencaoBase, db: 
         db.begin()
         db_manutencao = db.query(models.Manutencao).filter(models.Manutencao.codigo_manutencao == manutencao_id).first()
         if db_manutencao is None:
-            raise HTTPException(status_code=404, detail="Maquina not found")
+            raise HTTPException(status_code=404, detail="Manutencao not found")
         db_manutencao.tipo = manutencao.tipo
         db.commit()
         db.refresh(db_manutencao)
@@ -152,7 +153,9 @@ async def delete_manutencao(manutencao_id: int, db: db_dependency):
         db.begin()
         db_manutencao = db.query(models.Manutencao).filter(models.Manutencao.codigo_manutencao == manutencao_id).first()
         if db_manutencao is None:
-            raise HTTPException(status_code=404, detail="Maquina not found")
+            raise HTTPException(status_code=404, detail="Manutencao not found")
+        
+        db.query(models.Manutencao_maquina).filter(models.Manutencao_maquina.maquina_codigo == manutencao_id).delete()
         db.delete(db_manutencao)
         db.commit()
         return db_manutencao
@@ -182,7 +185,7 @@ async def read_manutencao_maquina(manutencao_id: int, maquina_id: int, db: db_de
         db.begin()
         db_manutencao_maquina = db.query(models.Manutencao_maquina).filter(models.Manutencao_maquina.manutencao_codigo_manutencao == manutencao_id).filter(models.Manutencao_maquina.maquina_codigo == maquina_id).first()
         if db_manutencao_maquina is None:
-            raise HTTPException(status_code=404, detail="Maquina not found")
+            raise HTTPException(status_code=404, detail="Manutencao not found")
         return db_manutencao_maquina
     except SQLAlchemyError as e:
         db.rollback()
@@ -194,7 +197,7 @@ async def update_manutencao_maquina(manutencao_id: int, maquina_id: int, manuten
         db.begin()
         db_manutencao_maquina = db.query(models.Manutencao_maquina).filter(models.Manutencao_maquina.manutencao_codigo_manutencao == manutencao_id).filter(models.Manutencao_maquina.maquina_codigo == maquina_id).first()
         if db_manutencao_maquina is None:
-            raise HTTPException(status_code=404, detail="Maquina not found")
+            raise HTTPException(status_code=404, detail="Manutencao not found")
         db_manutencao_maquina.data_inicio = manutencao_maquina.data_inicio
         db_manutencao_maquina.data_fim = manutencao_maquina.data_fim
         db.commit()
@@ -207,13 +210,20 @@ async def update_manutencao_maquina(manutencao_id: int, maquina_id: int, manuten
 @app.delete("/manutencao_maquina/{manutencao_id}/{maquina_id}", summary="Deleta uma relação entre manutenção e máquina a partir do ID da manutenção e da máquina")
 async def delete_manutencao_maquina(manutencao_id: int, maquina_id: int, db: db_dependency):
     try:
-        db.begin()
-        db_manutencao_maquina = db.query(models.Manutencao_maquina).filter(models.Manutencao_maquina.manutencao_codigo_manutencao == manutencao_id).filter(models.Manutencao_maquina.maquina_codigo == maquina_id).first
+
+        db_manutencao_maquina = db.query(models.Manutencao_maquina)\
+            .filter(models.Manutencao_maquina.manutencao_codigo_manutencao == manutencao_id)\
+            .filter(models.Manutencao_maquina.maquina_codigo == maquina_id)\
+            .first() 
+        
         if db_manutencao_maquina is None:
-            raise HTTPException(status_code=404, detail="Maquina not found")
+            raise HTTPException(status_code=404, detail="Manutencao not found")
+        
         db.delete(db_manutencao_maquina)
         db.commit()
-        return db_manutencao_maquina
+        
+        return {"detail": "Manutencao_maquina deleted successfully"}
+    
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
