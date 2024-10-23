@@ -8,7 +8,11 @@ from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
-app = FastAPI()
+app = FastAPI(
+    title="API Fazenda - Postgresql",
+    description="API para gerenciamento da fazenda",
+    version="0.1"
+)
 models.Base.metadata.create_all(bind=engine)
 
 class MaquinaBase(BaseModel):
@@ -35,7 +39,9 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 # CRUD máquina
-@app.post("/maquina/")
+# Documentando o fastapi post
+
+@app.post("/maquina/", summary="Cria uma nova máquina", description="Cria uma nova máquina na base de dados")
 async def create_maquina(maquina: MaquinaBase, db: db_dependency):
         try:
             db.begin()
@@ -50,7 +56,7 @@ async def create_maquina(maquina: MaquinaBase, db: db_dependency):
             raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
 
-@app.get("/maquina/{maquina_id}")
+@app.get("/maquina/{maquina_id}", summary="Lista uma máquina a partir do seu ID")
 async def read_maquina(maquina_id: int, db: db_dependency):
         try:
             db.begin()
@@ -63,7 +69,7 @@ async def read_maquina(maquina_id: int, db: db_dependency):
             raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
 
-@app.put("/maquina/{maquina_id}")
+@app.put("/maquina/{maquina_id}", summary="Atualiza uma máquina a partir do seu ID")
 async def update_maquina(maquina_id: int, maquina: MaquinaBase, db: db_dependency):
     try:
         db.begin()
@@ -82,7 +88,7 @@ async def update_maquina(maquina_id: int, maquina: MaquinaBase, db: db_dependenc
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
         
 
-@app.delete("/maquina/{maquina_id}")
+@app.delete("/maquina/{maquina_id}", summary="Deleta uma máquina a partir do seu ID")
 async def delete_maquina(maquina_id: int, db: db_dependency):
         try:
             db.begin()
@@ -97,7 +103,7 @@ async def delete_maquina(maquina_id: int, db: db_dependency):
             raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
 # CRUD manutenção
-@app.post("/manutencao/")
+@app.post("/manutencao/", summary="Cria uma nova manutenção", description="Cria uma nova manutenção na base de dados")
 async def create_manutencao(manutencao: ManutencaoBase, db: db_dependency):
     try:
         db.begin()
@@ -111,7 +117,7 @@ async def create_manutencao(manutencao: ManutencaoBase, db: db_dependency):
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
-@app.get("/manutencao/{manutencao_id}")
+@app.get("/manutencao/{manutencao_id}", summary="Lista uma manutenção a partir do seu ID")
 async def read_manutencao(manutencao_id: int, db: db_dependency):
     try:
         db.begin()
@@ -124,7 +130,7 @@ async def read_manutencao(manutencao_id: int, db: db_dependency):
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
     
 
-@app.put("/manutencao/{manutencao_id}")
+@app.put("/manutencao/{manutencao_id}", summary="Atualiza uma manutenção a partir do seu ID")
 async def update_manutencao(manutencao_id: int, manutencao: ManutencaoBase, db: db_dependency):
     try:
         db.begin()
@@ -140,7 +146,7 @@ async def update_manutencao(manutencao_id: int, manutencao: ManutencaoBase, db: 
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
         
 
-@app.delete("/manutencao/{manutencao_id}")
+@app.delete("/manutencao/{manutencao_id}", summary="Deleta uma manutenção a partir do seu ID")
 async def delete_manutencao(manutencao_id: int, db: db_dependency):
     try:
         db.begin()
@@ -156,7 +162,7 @@ async def delete_manutencao(manutencao_id: int, db: db_dependency):
     
 
 # CRUD relação manutenção-máquina
-@app.post("/manutencao_maquina/")
+@app.post("/manutencao_maquina/", summary="Cria uma nova relação entre manutenção e máquina", description="Cria uma nova relação entre manutenção e máquina na base de dados")
 async def create_manutencao_maquina(manutencao_maquina: Manutencao_maquinaBase, db: db_dependency):
     try:
         db.begin()
@@ -170,7 +176,7 @@ async def create_manutencao_maquina(manutencao_maquina: Manutencao_maquinaBase, 
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
-@app.get("/manutencao_maquina/{manutencao_id}/{maquina_id}")
+@app.get("/manutencao_maquina/{manutencao_id}/{maquina_id}", summary="Lista uma relação entre manutenção e máquina a partir do ID da manutenção e da máquina")
 async def read_manutencao_maquina(manutencao_id: int, maquina_id: int, db: db_dependency):
     try:
         db.begin()
@@ -182,7 +188,7 @@ async def read_manutencao_maquina(manutencao_id: int, maquina_id: int, db: db_de
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
-@app.put("/manutencao_maquina/{manutencao_id}/{maquina_id}")
+@app.put("/manutencao_maquina/{manutencao_id}/{maquina_id}", summary="Atualiza uma relação entre manutenção e máquina a partir do ID da manutenção e da máquina")
 async def update_manutencao_maquina(manutencao_id: int, maquina_id: int, manutencao_maquina: Manutencao_maquinaBase, db: db_dependency):
     try:
         db.begin()
@@ -198,7 +204,7 @@ async def update_manutencao_maquina(manutencao_id: int, maquina_id: int, manuten
         db.rollback()
         raise HTTPException(status_code=500, detail="Database error: " + str(e))
 
-@app.delete("/manutencao_maquina/{manutencao_id}/{maquina_id}")
+@app.delete("/manutencao_maquina/{manutencao_id}/{maquina_id}", summary="Deleta uma relação entre manutenção e máquina a partir do ID da manutenção e da máquina")
 async def delete_manutencao_maquina(manutencao_id: int, maquina_id: int, db: db_dependency):
     try:
         db.begin()
